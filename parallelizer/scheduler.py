@@ -1,17 +1,32 @@
-import spawner
+import operator
 
-def make(files):
-    """Given a list of files, generate a 3-dimensional list defining the
-    optimal distribution of those files run across processors."""
-    parallelism = spawner.parallelism()
-    schedule = []
+def make(perf_report, parallelism):
+    """Create an object representing the optimal schedule of test runs. Uses
+    a simple greedy algorithm."""
 
-    for proc_num in range(parallelism):
-        file_list = files[proc_num::parallelism]
-        if len(file_list) > 0:
-            schedule.append([file_list])
+    # Create a 'full' job schedule for each slot
+    full_schedule = [ { 'duration': 0, 'files': [] }
+        for _ in range(parallelism) ]
 
+    perf_report.sort(key=operator.itemgetter('timing'), reverse=True)
+
+    for file_report in perf_report:
+        proc = min(full_schedule, key=operator.itemgetter('duration'))
+
+        proc['duration'] += file_report['timing']
+        proc['files'].append(file_report)
+
+    return _simplify_schedule(full_schedule)
+
+def _simplify_schedule(full_schedule):
+    """Reduce a 'full' schedule (which contains 'full' job reports) to a
+    two-dimensional list of file names."""
+    schedule = map(_simplify_job, full_schedule)
+    # Remove empty job schedules
+    schedule = filter(lambda files: len(files), schedule)
     return schedule
 
-if __name__ == '__main__':
-    print make_schedule(range(16))
+def _simplify_job(job):
+    """Reduce a 'full' job report (which specifies a total duration and
+    per-file timing data) to a simple list of file names."""
+    return map(operator.itemgetter('file_name'), job['files'])

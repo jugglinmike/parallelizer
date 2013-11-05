@@ -20,8 +20,9 @@ def cli():
     args = parser.parse_args()
 
     file_names = map(lambda x: x.name, args.files)
+    perf_report = map(lambda x: { 'file_name': x, 'timing': 1 }, file_names)
 
-    schedule = scheduler.make(file_names)
+    schedule = scheduler.make(perf_report, spawner.parallelism())
     spawner.spawn(args.cmd, schedule)
 
 if __name__ == '__main__':

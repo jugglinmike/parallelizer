@@ -9,7 +9,10 @@ setup(name = 'parallelizer',
       author_email = 'mike@mikepennisi.com',
       url = 'https://github.com/jugglinmike/parallelizer',
       packages = ['parallelizer'],
-      install_requires = ['mozprocess>=0.13'],
+      install_requires = [
+        'mozprocess>=0.13',
+        'nose>=1.3.0'
+      ],
       entry_points = {
         'console_scripts': [
             'parallelizer = parallelizer.parallelizer:cli'

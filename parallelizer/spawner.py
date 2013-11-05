@@ -120,11 +120,7 @@ def parallelism():
     raise Exception('Can not determine number of CPUs on this system')
 
 def spawn(cmd, schedule):
-    for processor_schedule in schedule:
-      spawn_processor(cmd, processor_schedule)
-
-def spawn_processor(cmd, processor_schedule):
-    for files in processor_schedule:
+    for files in schedule:
         proc = mozprocess.ProcessHandlerMixin(cmd=cmd, args=files,
             processOutputLine=[logger.write_line])
         proc.run()
