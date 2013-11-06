@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+import threading
 
 import mozprocess
 import logger
@@ -120,9 +121,26 @@ def parallelism():
     raise Exception('Can not determine number of CPUs on this system')
 
 def spawn(cmd, schedule):
+    sem = threading.Condition()
     for files in schedule:
-        proc = mozprocess.ProcessHandlerMixin(cmd=cmd, args=files,
-            processOutputLine=[logger.write_line])
-        proc.run()
-        proc.wait()
-        proc.kill()
+        m = RunnerThread(cmd, files, sem)
+        m.start()
+    sem.acquire()
+    print "Done"
+
+class RunnerThread(threading.Thread):
+    def __init__(self, cmd, args, sem):
+        self.cmd = cmd
+        self.args = args
+        self.sem = sem
+        super(RunnerThread, self).__init__()
+
+    def run(self):
+        print "with"
+        with self.sem:
+            process = mozprocess.ProcessHandlerMixin(cmd=self.cmd, args=self.args,
+                processOutputLine=[logger.write_line])
+            process.run()
+            process.wait()
+            self.sem.notify()
+        print "out"
