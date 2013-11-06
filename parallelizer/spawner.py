@@ -1,10 +1,13 @@
 import os
 import re
 import subprocess
+import time
+import concurrent.futures
 
 import mozprocess
 import logger
 
+futures = concurrent.futures
 # Source:
 # http://stackoverflow.com/questions/1006289/how-to-find-out-the-number-of-cpus-in-python
 def parallelism():
@@ -120,9 +123,33 @@ def parallelism():
     raise Exception('Can not determine number of CPUs on this system')
 
 def spawn(cmd, schedule):
-    for files in schedule:
-        proc = mozprocess.ProcessHandlerMixin(cmd=cmd, args=files,
-            processOutputLine=[logger.write_line])
-        proc.run()
-        proc.wait()
-        proc.kill()
+    """Asynchronously execute the tests described by the specified command and
+    schedule. Return a performance report describing the duration of each
+    job."""
+    perf_report = []
+
+    with futures.ThreadPoolExecutor(max_workers=len(schedule)) as executor:
+        proc_futures = [ executor.submit(run, cmd, files) for files in schedule ]
+        for future in futures.as_completed(proc_futures):
+            try:
+                duration = future.result()
+            except Exception as e:
+                print('Exception! %s', e)
+            else:
+                perf_report.append(duration)
+
+    return perf_report
+
+def run(cmd, file_names):
+    """Execute the given command with the given file names as arguments. Report
+    on the duration and exit status of the command."""
+    start = time.time()
+    process = mozprocess.ProcessHandlerMixin(cmd=cmd, args=file_names,
+        processOutputLine=[logger.write_line])
+    process.run()
+    status = process.wait()
+    return {
+        'file_names': file_names,
+        'status': status,
+        'duration': time.time() - start
+    }

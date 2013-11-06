@@ -11,7 +11,8 @@ setup(name = 'parallelizer',
       packages = ['parallelizer'],
       install_requires = [
         'mozprocess>=0.13',
-        'nose>=1.3.0'
+        'nose>=1.3.0',
+        'futures'
       ],
       entry_points = {
         'console_scripts': [

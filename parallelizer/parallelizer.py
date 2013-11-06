@@ -23,7 +23,8 @@ def cli():
     perf_report = map(lambda x: { 'file_name': x, 'timing': 1 }, file_names)
 
     schedule = scheduler.make(perf_report, spawner.parallelism())
-    spawner.spawn(args.cmd, schedule)
+    perf_report = spawner.spawn(args.cmd, schedule)
+    print perf_report
 
 if __name__ == '__main__':
     cli()
