@@ -4,6 +4,15 @@ import scheduler
 import spawner
 from logger import Logger
 
+def main(cmd, files, output):
+    logger = Logger(stream=output == 'stream')
+    file_names = map(lambda x: x.name, files)
+    perf_report = map(lambda x: { 'file_name': x, 'timing': 1 }, file_names)
+
+    schedule = scheduler.make(perf_report, spawner.parallelism())
+    perf_report = spawner.spawn(cmd, schedule, logger)
+    print perf_report
+
 def cli():
     parser = argparse.ArgumentParser(
                         description="""spawn and benchmark multiple
@@ -22,15 +31,8 @@ def cli():
     #                    help="""Number of seconds to wait before considering a
     #                    silent process 'failed' and kiling it""")
     parser.add_argument('files', nargs=argparse.REMAINDER, type=file)
-    args = parser.parse_args()
 
-    logger = Logger(stream=args.output == 'stream')
-    file_names = map(lambda x: x.name, args.files)
-    perf_report = map(lambda x: { 'file_name': x, 'timing': 1 }, file_names)
-
-    schedule = scheduler.make(perf_report, spawner.parallelism())
-    perf_report = spawner.spawn(args.cmd, schedule, logger)
-    print perf_report
+    main(**vars(parser.parse_args()))
 
 if __name__ == '__main__':
     cli()
