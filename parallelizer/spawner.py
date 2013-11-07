@@ -2,13 +2,12 @@ import os
 import re
 import subprocess
 import time
-import concurrent.futures
+from concurrent import futures
 
 import mozprocess
 import logger
 from utils import curry
 
-futures = concurrent.futures
 # Source:
 # http://stackoverflow.com/questions/1006289/how-to-find-out-the-number-of-cpus-in-python
 def parallelism():
