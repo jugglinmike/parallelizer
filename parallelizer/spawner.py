@@ -6,6 +6,7 @@ import concurrent.futures
 
 import mozprocess
 import logger
+from utils import curry
 
 futures = concurrent.futures
 # Source:
@@ -122,14 +123,14 @@ def parallelism():
 
     raise Exception('Can not determine number of CPUs on this system')
 
-def spawn(cmd, schedule):
+def spawn(cmd, schedule, logger):
     """Asynchronously execute the tests described by the specified command and
     schedule. Return a performance report describing the duration of each
     job."""
     perf_report = []
 
     with futures.ThreadPoolExecutor(max_workers=len(schedule)) as executor:
-        proc_futures = [ executor.submit(run, cmd, files) for files in schedule ]
+        proc_futures = [ executor.submit(run, cmd, files, logger) for files in schedule ]
         for future in futures.as_completed(proc_futures):
             try:
                 duration = future.result()
@@ -140,14 +141,18 @@ def spawn(cmd, schedule):
 
     return perf_report
 
-def run(cmd, file_names):
+def run(cmd, file_names, logger):
     """Execute the given command with the given file names as arguments. Report
     on the duration and exit status of the command."""
     start = time.time()
-    process = mozprocess.ProcessHandlerMixin(cmd=cmd, args=file_names,
-        processOutputLine=[logger.write_line])
+
+    process = mozprocess.ProcessHandlerMixin(cmd=cmd, args=file_names)
+    process.processOutputLineHandlers.append(curry(logger.write_line, process))
     process.run()
     status = process.wait()
+
+    logger.flush(process)
+
     return {
         'file_names': file_names,
         'status': status,

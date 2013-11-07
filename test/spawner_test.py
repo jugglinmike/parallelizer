@@ -1,6 +1,7 @@
 from os import path
 
 from parallelizer import spawner
+from parallelizer.logger import Logger
 
 # TODO: Re-enable this test when the following bug has been fixed in
 # mozprocess:
@@ -12,7 +13,7 @@ def basic_xtest():
     fixtures_dir = path.join(path.dirname(path.realpath(__file__)), 'fixtures')
     fixtures = ['pass.py', 'fail-23.py', 'fail-45.py']
     files = map(lambda fixture: [path.join(fixtures_dir, fixture)], fixtures)
-    perf_report = spawner.spawn('python', files)
+    perf_report = spawner.spawn('python', files, Logger())
 
     assert(len(perf_report) == 3)
 
