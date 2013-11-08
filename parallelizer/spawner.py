@@ -123,23 +123,48 @@ def parallelism():
 
 def spawn(cmd, schedule, logger):
     """Asynchronously execute the tests described by the specified command and
-    schedule. Return a performance report describing the duration of each
-    successful file."""
-    perf_report = []
+    schedule. Return a performance report containing a 'score' for each file
+    that terminated normally."""
+
+    duration_report = _spawn(cmd, schedule, logger)
+    perf_report = normalize(duration_report)
+    return perf_report
+
+def normalize(duration_report):
+    """Given a duration report, create a performance report by normalize raw
+    timing data according to the local system's resources."""
+    benchmarks = ['cpu', 'memory', 'disk']
+    benchmarks = map(lambda x: ['parallelizer/benchmarks/' + x + '.py'], benchmarks)
+
+    benchmark_report = _spawn('python', benchmarks)
+    perf_factor = reduce(lambda x, y: x + y['duration'], benchmark_report, 0)
+
+    def scale(file_report):
+        return {
+            'file_name': file_report['file_name'],
+            'score': file_report['duration'] / perf_factor
+        }
+
+    duration_report = map(scale, duration_report)
+
+    return duration_report
+
+def _spawn(cmd, schedule, logger=None):
+    duration_report = []
 
     with futures.ThreadPoolExecutor(max_workers=len(schedule)) as executor:
-        proc_futures = [ executor.submit(run, cmd, files, logger) for files in schedule ]
+        proc_futures = [ executor.submit(run_job, cmd, files, logger) for files in schedule ]
         for future in futures.as_completed(proc_futures):
             try:
                 duration = future.result()
             except Exception as e:
                 print('Exception! %s', e)
             else:
-                perf_report.extend(duration)
+                duration_report.extend(duration)
 
-    return perf_report
+    return duration_report
 
-def run(cmd, file_names, logger):
+def run_job(cmd, file_names, logger):
     """Execute the given command for each of the given files in series. Return
     a 'report' describing the duration and file name of each execution."""
     report = []
@@ -148,11 +173,14 @@ def run(cmd, file_names, logger):
         start = time.time()
 
         process = mozprocess.ProcessHandlerMixin(cmd=cmd, args=[file_name])
-        process.processOutputLineHandlers.append(curry(logger.write_line, process))
+        if logger:
+            process.processOutputLineHandlers.append(curry(logger.write_line, process))
         process.run()
         status = process.wait()
 
-        logger.flush(process)
+        if logger:
+            logger.flush(process)
+
         if status == 0:
           report.append({
             'file_name': file_name,
