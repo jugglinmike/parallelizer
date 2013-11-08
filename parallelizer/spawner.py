@@ -5,7 +5,6 @@ import time
 from concurrent import futures
 
 import mozprocess
-import logger
 from utils import curry
 
 # Source:
@@ -125,7 +124,7 @@ def parallelism():
 def spawn(cmd, schedule, logger):
     """Asynchronously execute the tests described by the specified command and
     schedule. Return a performance report describing the duration of each
-    job."""
+    successful file."""
     perf_report = []
 
     with futures.ThreadPoolExecutor(max_workers=len(schedule)) as executor:
@@ -136,14 +135,13 @@ def spawn(cmd, schedule, logger):
             except Exception as e:
                 print('Exception! %s', e)
             else:
-                perf_report.append(duration)
+                perf_report.extend(duration)
 
     return perf_report
 
 def run(cmd, file_names, logger):
     """Execute the given command for each of the given files in series. Return
-    a 'report' describing the duration, file name, and exit status of each
-    execution."""
+    a 'report' describing the duration and file name of each execution."""
     report = []
 
     for file_name in file_names:
@@ -155,10 +153,10 @@ def run(cmd, file_names, logger):
         status = process.wait()
 
         logger.flush(process)
-        report.append({
-          'file_name': file_name,
-          'status': status,
-          'duration': time.time() - start
-        })
+        if status == 0:
+          report.append({
+            'file_name': file_name,
+            'duration': time.time() - start
+          })
 
     return report
