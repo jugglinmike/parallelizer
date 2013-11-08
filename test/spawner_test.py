@@ -9,7 +9,7 @@ from parallelizer.logger import Logger
 #   https://bugzilla.mozilla.org/show_bug.cgi?id=935677
 def basic_xtest():
     """The generated performance report should correctly describe test
-    duration, file names, and status code."""
+    execution duration, file name, and status code."""
     fixtures_dir = path.join(path.dirname(path.realpath(__file__)), 'fixtures')
     fixtures = ['pass.py', 'fail-23.py', 'fail-45.py']
     files = map(lambda fixture: [path.join(fixtures_dir, fixture)], fixtures)
@@ -17,9 +17,20 @@ def basic_xtest():
 
     assert(len(perf_report) == 3)
 
-    for rep in perf_report:
-        rep['duration'] = type(rep['duration']) == float and rep['duration'] > 0
+    def assert_shape(report):
+        assert(len(report) == 1)
+        assert(type(report[0]['duration']) == float)
+        assert(report[0]['duration'] > 0)
 
-    assert({ 'file_names': files[0], 'duration': True, 'status': 0 } in perf_report)
-    assert({ 'file_names': files[1], 'duration': True, 'status': 23 } in perf_report)
-    assert({ 'file_names': files[2], 'duration': True, 'status': 45 } in perf_report)
+    # Remove unecessary structure and non-deterministic data
+    def collapse(report):
+        del report[0]['duration']
+        return report[0]
+
+    (assert_shape(report) for report in perf_report)
+
+    collapsed = map(collapse, perf_report)
+
+    assert({ 'file_name': files[0][0], 'status': 0 } in collapsed)
+    assert({ 'file_name': files[1][0], 'status': 23 } in collapsed)
+    assert({ 'file_name': files[2][0], 'status': 45 } in collapsed)

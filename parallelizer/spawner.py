@@ -141,19 +141,24 @@ def spawn(cmd, schedule, logger):
     return perf_report
 
 def run(cmd, file_names, logger):
-    """Execute the given command with the given file names as arguments. Report
-    on the duration and exit status of the command."""
-    start = time.time()
+    """Execute the given command for each of the given files in series. Return
+    a 'report' describing the duration, file name, and exit status of each
+    execution."""
+    report = []
 
-    process = mozprocess.ProcessHandlerMixin(cmd=cmd, args=file_names)
-    process.processOutputLineHandlers.append(curry(logger.write_line, process))
-    process.run()
-    status = process.wait()
+    for file_name in file_names:
+        start = time.time()
 
-    logger.flush(process)
+        process = mozprocess.ProcessHandlerMixin(cmd=cmd, args=[file_name])
+        process.processOutputLineHandlers.append(curry(logger.write_line, process))
+        process.run()
+        status = process.wait()
 
-    return {
-        'file_names': file_names,
-        'status': status,
-        'duration': time.time() - start
-    }
+        logger.flush(process)
+        report.append({
+          'file_name': file_name,
+          'status': status,
+          'duration': time.time() - start
+        })
+
+    return report
