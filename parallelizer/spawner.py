@@ -61,7 +61,8 @@ def run_job(cmd, file_names, logger):
 
         process = mozprocess.ProcessHandlerMixin(cmd=cmd, args=[file_name])
         if logger:
-            process.processOutputLineHandlers.append(curry(logger.write_line, process))
+            write_fn = curry(logger.write_line, process)
+            process.processOutputLineHandlers.append(write_fn)
         process.run()
         status = process.wait()
 
