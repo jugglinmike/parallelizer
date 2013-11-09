@@ -7,10 +7,10 @@ from logger import Logger
 def main(cmd, files, output):
     logger = Logger(stream=output == 'stream')
     file_names = map(lambda x: x.name, files)
-    perf_report = map(lambda x: { 'file_name': x, 'timing': 1 }, file_names)
+    perf_report = map(lambda x: { 'file_name': x, 'weight': 1 }, file_names)
 
     schedule = scheduler.make(perf_report, spawner.parallelism())
-    perf_report = spawner.spawn(cmd, schedule, logger)
+    perf_report = spawner.execute(cmd, schedule, logger)
     print perf_report
 
 def cli():

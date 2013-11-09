@@ -5,15 +5,15 @@ def make(perf_report, parallelism):
     a simple greedy algorithm."""
 
     # Create a 'full' job schedule for each slot
-    full_schedule = [ { 'duration': 0, 'files': [] }
+    full_schedule = [ { 'weight': 0, 'files': [] }
         for _ in range(parallelism) ]
 
-    perf_report.sort(key=operator.itemgetter('timing'), reverse=True)
+    perf_report.sort(key=operator.itemgetter('weight'), reverse=True)
 
     for file_report in perf_report:
-        proc = min(full_schedule, key=operator.itemgetter('duration'))
+        proc = min(full_schedule, key=operator.itemgetter('weight'))
 
-        proc['duration'] += file_report['timing']
+        proc['weight'] += file_report['weight']
         proc['files'].append(file_report)
 
     return _simplify_schedule(full_schedule)

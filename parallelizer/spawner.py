@@ -121,35 +121,35 @@ def parallelism():
 
     raise Exception('Can not determine number of CPUs on this system')
 
-def spawn(cmd, schedule, logger):
+def execute(cmd, schedule, logger):
     """Asynchronously execute the tests described by the specified command and
     schedule. Return a performance report containing a 'score' for each file
     that terminated normally."""
 
-    duration_report = _spawn(cmd, schedule, logger)
-    perf_report = normalize(duration_report)
+    durations = run_jobs(cmd, schedule, logger)
+    perf_report = make_report(durations)
     return perf_report
 
-def normalize(duration_report):
-    """Given a duration report, create a performance report by normalize raw
+def make_report(durations):
+    """Given a duration report, create a performance report by normalizing raw
     timing data according to the local system's resources."""
     benchmarks = ['cpu', 'memory', 'disk']
     benchmarks = map(lambda x: ['parallelizer/benchmarks/' + x + '.py'], benchmarks)
 
-    benchmark_report = _spawn('python', benchmarks)
+    benchmark_report = run_jobs('python', benchmarks)
     perf_factor = reduce(lambda x, y: x + y['duration'], benchmark_report, 0)
 
     def scale(file_report):
         return {
             'file_name': file_report['file_name'],
-            'score': file_report['duration'] / perf_factor
+            'weight': file_report['duration'] / perf_factor
         }
 
-    duration_report = map(scale, duration_report)
+    perf_report = map(scale, durations)
 
-    return duration_report
+    return perf_report
 
-def _spawn(cmd, schedule, logger=None):
+def run_jobs(cmd, schedule, logger=None):
     duration_report = []
 
     with futures.ThreadPoolExecutor(max_workers=len(schedule)) as executor:
