@@ -14,16 +14,16 @@ def execute(cmd, schedule, logger):
     that terminated normally."""
 
     durations = run_jobs(cmd, schedule, logger)
-    perf_report = make_report(durations)
+    perf_report = make_report(durations, logger)
     return perf_report
 
-def make_report(durations):
+def make_report(durations, logger):
     """Given a duration report, create a performance report by normalizing raw
     timing data according to the local system's resources."""
     benchmarks = ['cpu', 'memory', 'disk']
     benchmarks = map(lambda x: ['parallelizer/benchmarks/' + x + '.py'], benchmarks)
 
-    benchmark_report = run_jobs('python', benchmarks)
+    benchmark_report = run_jobs('python', benchmarks, logger)
     perf_factor = reduce(lambda x, y: x + y['duration'], benchmark_report, 0)
 
     def scale(file_report):
@@ -36,7 +36,7 @@ def make_report(durations):
 
     return perf_report
 
-def run_jobs(cmd, schedule, logger=None):
+def run_jobs(cmd, schedule, logger):
     duration_report = []
 
     with futures.ThreadPoolExecutor(max_workers=len(schedule)) as executor:
@@ -60,14 +60,12 @@ def run_job(cmd, file_names, logger):
         start = time.time()
 
         process = mozprocess.ProcessHandlerMixin(cmd=cmd, args=[file_name])
-        if logger:
-            write_fn = curry(logger.write_line, process)
-            process.processOutputLineHandlers.append(write_fn)
+        write_fn = curry(logger.write_line, process)
+        process.processOutputLineHandlers.append(write_fn)
         process.run()
         status = process.wait()
 
-        if logger:
-            logger.flush(process)
+        logger.flush(process)
 
         if status == 0:
           report.append({
