@@ -27,6 +27,14 @@ Install the tool by running:
 
     $ python setup.py develop
 
+## Usage
+
+The project installs a single executable in properly-configured environments:
+`parallelizer`. This project is under heavy development, so in leui of formal
+usage documentation, please invoke the executable with the `--help` flag:
+
+    $ parallelizer --help
+
 ## Tests
 
 After installations, the project's tests can be run via:
