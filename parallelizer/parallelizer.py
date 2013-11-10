@@ -2,18 +2,24 @@ import argparse
 
 import scheduler
 import spawner
+from reporter import Reporter
 from logger import Logger
 
-def main(cmd, files, output):
+def main(cmd, files, output, redis_address):
     logger = Logger(stream=output == 'stream')
-    file_names = map(lambda x: x.name, files)
-    perf_report = map(lambda x: { 'file_name': x, 'weight': 1 }, file_names)
+    reporter = Reporter(**redis_address)
 
+    perf_report = reporter.get_report(files)
     schedule = scheduler.make(perf_report, spawner.parallelism())
     perf_report = spawner.execute(cmd, schedule, logger)
-    print perf_report
+
+    reporter.submit(perf_report)
 
 def cli():
+    def parse_address(address):
+        host, port = address.split(':')
+        return dict(host=host, port=int(port))
+
     parser = argparse.ArgumentParser(
                         description="""spawn and benchmark multiple
                         test-running processes""")
@@ -26,6 +32,10 @@ def cli():
                         dest='output', choices=['stream', 'buffer'],
                         help="""Method for logging output of interleaved
                         processes""")
+    parser.add_argument('-r', '--redis', type=parse_address,
+                        dest='redis_address', default='localhost:6379',
+                        help="""The address of the Redis-powered performance
+                        database""")
     #parser.add_argument('-t', '--timeout', default=10, type=int,
     #                    dest='timeout',
     #                    help="""Number of seconds to wait before considering a

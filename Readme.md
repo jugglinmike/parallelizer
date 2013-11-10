@@ -17,6 +17,12 @@ them will help in reading the source:
 
 ## Installation
 
+Requirements:
+
+- Python 2.7 (download from [python.org](http://python.org/download/))
+- Redis 2.2.12 or greater running either locally or at a network-accessible
+  location (download from [redis.io](http://redis.io/download)]
+
 Install the tool by running:
 
     $ python setup.py develop
