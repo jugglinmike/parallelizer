@@ -1,13 +1,36 @@
 import argparse
+from manifestparser import ManifestParser, ExpressionParser
+import mozinfo
 
 import scheduler
 import spawner
 from reporter import Reporter
 from logger import Logger
 
-def main(cmd, files, output, redis_address):
+def files_from_manifest(manifest_file):
+    def is_enabled(entry):
+        if 'disabled' in entry:
+            return False
+        if 'run-if' in entry:
+            return ExpressionParser(entry['run-if'], vars(mozinfo)).parse()
+        if 'skip-if' in entry:
+            return not ExpressionParser(entry['skip-if'], vars(mozinfo)).parse()
+        return True
+
+    parser = ManifestParser()
+    parser.read(manifest_file)
+    entries = parser.tests
+    entries = filter(is_enabled, parser.tests)
+    return map(lambda entry: entry['path'], entries)
+
+def main(cmd, file_names, output, redis_address):
     logger = Logger(stream=output == 'stream')
     reporter = Reporter(**redis_address)
+
+    if len(file_names) == 1:
+        file_names = files_from_manifest(file_names[0])
+
+    files = map(file, file_names)
 
     perf_report = reporter.get_report(files)
     schedule = scheduler.make(perf_report, spawner.parallelism())
@@ -19,6 +42,10 @@ def cli():
     def parse_address(address):
         host, port = address.split(':')
         return dict(host=host, port=int(port))
+
+    def verify_file(file_name):
+        open(file_name, 'r')
+        return file_name
 
     parser = argparse.ArgumentParser(
                         description="""spawn and benchmark multiple
@@ -40,7 +67,10 @@ def cli():
     #                    dest='timeout',
     #                    help="""Number of seconds to wait before considering a
     #                    silent process 'failed' and kiling it""")
-    parser.add_argument('files', nargs=argparse.REMAINDER, type=file)
+    parser.add_argument('file_names', nargs='+', type=verify_file,
+                        help="""Test files to run with the given command. If
+                        only one file is specified, attempt to parse as a
+                        manifest file.""")
 
     main(**vars(parser.parse_args()))
 

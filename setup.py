@@ -11,6 +11,8 @@ setup(name = 'parallelizer',
       packages = ['parallelizer'],
       install_requires = [
         'mozprocess>=0.13',
+        'manifestdestiny>=0.6',
+        'mozinfo',
         'nose>=1.3.0',
         'redis',
         'futures'
