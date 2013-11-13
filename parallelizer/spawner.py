@@ -1,5 +1,6 @@
 import time
 import os
+import shlex
 from concurrent import futures
 
 import mozprocess
@@ -44,8 +45,18 @@ def make_report(durations, logger):
 def run_jobs(cmd, schedule, logger):
     duration_report = []
 
+    # If the command contains arguments, these should be shared across each
+    # file in the schedule.
+    cmd = shlex.split(cmd)
+    shared_args = cmd[1:]
+    cmd = cmd[0]
+
     with futures.ThreadPoolExecutor(max_workers=len(schedule)) as executor:
-        proc_futures = [ executor.submit(run_job, cmd, files, logger) for files in schedule ]
+        proc_futures = [
+            executor.submit(
+                run_job, cmd, files, logger, shared_args=shared_args
+            ) for files in schedule
+        ]
         for future in futures.as_completed(proc_futures):
             try:
                 duration = future.result()
@@ -56,7 +67,7 @@ def run_jobs(cmd, schedule, logger):
 
     return duration_report
 
-def run_job(cmd, file_names, logger):
+def run_job(cmd, file_names, logger, shared_args=[]):
     """Execute the given command for each of the given files in series. Return
     a 'report' describing the duration and file name of each execution."""
     report = []
@@ -64,7 +75,10 @@ def run_job(cmd, file_names, logger):
     for file_name in file_names:
         start = time.time()
 
-        process = mozprocess.ProcessHandlerMixin(cmd=cmd, args=[file_name])
+        process = mozprocess.ProcessHandlerMixin(
+            cmd=cmd,
+            args=shared_args + [file_name]
+        )
         write_fn = curry(logger.write_line, process)
         process.processOutputLineHandlers.append(write_fn)
         process.run()

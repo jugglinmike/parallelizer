@@ -7,11 +7,11 @@ from parallelizer import spawner
 from parallelizer.logger import Logger
 
 run_job_orig = spawner.run_job
-def run_job_without_benchmark(*args):
+def run_job_without_benchmark(*args, **kwargs):
     files = len(args) and args[1]
     if files and len(files) and 'benchmark' in files[0]:
         return [dict(file_name=file_name, duration=1) for file_name in files]
-    return run_job_orig(*args)
+    return run_job_orig(*args, **kwargs)
 
 def mock_run_job():
     spawner.run_job = run_job_without_benchmark
