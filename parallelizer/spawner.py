@@ -1,4 +1,5 @@
 import time
+import os
 from concurrent import futures
 
 import mozprocess
@@ -21,7 +22,11 @@ def make_report(durations, logger):
     """Given a duration report, create a performance report by normalizing raw
     timing data according to the local system's resources."""
     benchmarks = ['cpu', 'memory', 'disk']
-    benchmarks = map(lambda x: ['parallelizer/benchmarks/' + x + '.py'], benchmarks)
+    benchmark_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        'benchmarks'
+    )
+    benchmarks = map(lambda x: [os.path.join(benchmark_dir, x) + '.py'], benchmarks)
 
     benchmark_report = run_jobs('python', benchmarks, logger)
     perf_factor = reduce(lambda x, y: x + y['duration'], benchmark_report, 0)
