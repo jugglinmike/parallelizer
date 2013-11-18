@@ -35,6 +35,7 @@ def make_report(durations, logger):
     def scale(file_report):
         return {
             'file_name': file_report['file_name'],
+            'status': file_report['status'],
             'weight': file_report['duration'] / perf_factor
         }
 
@@ -69,7 +70,8 @@ def run_jobs(cmd, schedule, logger):
 
 def run_job(cmd, file_names, logger, shared_args=[]):
     """Execute the given command for each of the given files in series. Return
-    a 'report' describing the duration and file name of each execution."""
+    a 'report' describing the exit status, duration and file name of each
+    execution."""
     report = []
 
     for file_name in file_names:
@@ -86,10 +88,10 @@ def run_job(cmd, file_names, logger, shared_args=[]):
 
         logger.flush(process)
 
-        if status == 0:
-          report.append({
-            'file_name': file_name,
-            'duration': time.time() - start
-          })
+        report.append({
+          'file_name': file_name,
+          'status': status,
+          'duration': time.time() - start
+        })
 
     return report

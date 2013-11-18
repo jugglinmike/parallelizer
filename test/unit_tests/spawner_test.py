@@ -27,13 +27,18 @@ def basic_test():
     files = map(lambda name: [get_fixture(name)], fixture_names)
     perf_report = spawner.execute('python', files, Logger())
 
-    assert(len(perf_report) == 2)
+    assert(len(perf_report) == 4)
+
+    passcount = 0
+    failcount = 0
 
     for report in perf_report:
         assert(type(report['weight']) == float)
         assert(report['weight'] > 0)
+        if report['file_name'] == files[0][0] and report['status'] == 0:
+            passcount += 1
+        elif report['file_name'] == files[1][0] and report['status'] > 0:
+            failcount += 1
 
-    report_files = map(operator.itemgetter('file_name'), perf_report)
-
-    assert(files[0][0] in report_files)
-    assert(files[3][0] in report_files)
+    assert passcount == 2
+    assert failcount == 2

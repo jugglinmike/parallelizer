@@ -1,9 +1,15 @@
 import argparse
+import sys
 
 import scheduler
 import spawner
 from reporter import Reporter
 from logger import Logger
+
+def reduce_perf_report(current_status, file_report):
+    """Reduce a perf report describing many exit status to a single number: 0 if
+    all were zero, and 1 if one or more were non-zero"""
+    return 1 & current_status | (file_report['status'] != 0)
 
 def main(cmd, files, output, redis_address):
     logger = Logger(stream=output == 'stream')
@@ -14,6 +20,9 @@ def main(cmd, files, output, redis_address):
     perf_report = spawner.execute(cmd, schedule, logger)
 
     reporter.submit(perf_report)
+
+    status_code = reduce(reduce_perf_report, perf_report, 0)
+    sys.exit(status_code)
 
 def cli():
     def parse_address(address):

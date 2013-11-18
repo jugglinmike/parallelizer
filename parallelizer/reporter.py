@@ -32,6 +32,8 @@ class Reporter(object):
         if len(report) == 0:
             return
 
+        report = filter(lambda file_report: file_report['status'] == 0, report)
+
         pipe = self.redis.pipeline()
         key_vals = dict()
         for file_report in report:
