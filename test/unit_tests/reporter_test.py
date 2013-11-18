@@ -1,6 +1,6 @@
 import operator
 
-from utils import get_fixture
+from get_fixture import get_fixture
 
 import parallelizer.reporter as reporter
 Reporter = reporter.Reporter

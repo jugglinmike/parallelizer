@@ -1,7 +1,7 @@
 import operator
 from nose.tools import with_setup
 
-from utils import get_fixture
+from get_fixture import get_fixture
 
 from parallelizer import spawner
 from parallelizer.logger import Logger
